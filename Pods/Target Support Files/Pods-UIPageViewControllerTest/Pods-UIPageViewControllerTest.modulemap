@@ -1,0 +1,6 @@
+framework module Pods_UIPageViewControllerTest {
+  umbrella header "Pods-UIPageViewControllerTest-umbrella.h"
+
+  export *
+  module * { export * }
+}
