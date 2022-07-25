@@ -16,6 +16,8 @@ class ViewController: UIViewController{
   
   @IBOutlet weak var photoImageView: UIImageView!
   
+  var documentDirectoryFileURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+  
   
   var index: Int = 0
   
@@ -36,6 +38,11 @@ class ViewController: UIViewController{
     
     if count != 0 {
       self.textField.text = results[0].textFieldString
+      if results[0].fileURL != "" {
+        let fileURL = URL(string: results[0].fileURL)
+        let filePath = fileURL?.path
+        self.photoImageView.image = UIImage(contentsOfFile: filePath!)
+      }
     }
     // Do any additional setup after loading the view.
     //recivedDateに値が入っていたらそれを使い
@@ -166,7 +173,68 @@ extension ViewController: UINavigationControllerDelegate, UIImagePickerControlle
     if let pickedImage = info[.originalImage] as? UIImage {
       self.photoImageView.contentMode = .scaleAspectFit
       self.photoImageView.image = pickedImage
+      
+      //画像をドキュメントに保存
+      saveImageToDocument(pickedImage: pickedImage)
+      
+      //データベースの確認
+      let results = CheckDateDataModel().checkDateData(viewController: self)
+      let count = results.count
+      
+      //データがなかったらその日のデータを作成
+      if count == 0 {
+        let realm = try! Realm()
+        let dateData = DateDataModel()
+        dateData.date = self.date
+        dateData.fileURL = documentDirectoryFileURL.absoluteString
+        try! realm.write {
+          realm.add(dateData)
+        }
+      }else{
+        //データがあったら
+        //さらに写真のデータがあるかを確認し、
+        let realm = try! Realm()
+        if results[0].fileURL != "" {
+          //あれば古いデータをドキュメントから削除し
+          let fileURL = URL(string: results[0].fileURL)
+          let filePath = fileURL?.path
+          
+          if filePath != nil {
+            //ドキュメントから削除するメソッドremoveItem()
+            //この関数は引数にパスを取るので上でURLのpathプロパティの値を取得している
+            try? FileManager.default.removeItem(atPath: filePath!)
+          }
+        }
+        //その後あたらしいデータをいれる
+        try! realm.write() {
+          results[0].fileURL = documentDirectoryFileURL.absoluteString
+      }
     }
+    
     picker.dismiss(animated: true, completion: nil)
   }
+  //ドキュメントへ保存する写真のフルパスを作るメソッド
+  func createImageFilePath () {
+    
+    let fileName = "\(NSUUID().uuidString)"
+    
+    if documentDirectoryFileURL != nil {
+      let path = documentDirectoryFileURL.appendingPathComponent(fileName)
+      documentDirectoryFileURL = path
+    }
+  }
+  //ドキュメントへ写真を保存するメソッド
+  //ひとまずPNGとして保存する。ファイル形式については要確認。
+  func saveImageToDocument (pickedImage: UIImage) {
+    
+    createImageFilePath()
+    
+    let pngImageData = pickedImage.pngData()
+    do {
+      try pngImageData!.write(to: documentDirectoryFileURL)
+    } catch {
+      print("画像をドキュメントに保存できませんでした")
+    }
+  }
+}
 }
