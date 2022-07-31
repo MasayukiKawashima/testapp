@@ -11,6 +11,7 @@ import RealmSwift
 class DateDataModel: Object {
   @objc dynamic var date: String = ""
   @objc dynamic var textFieldString: String = ""
+  @objc dynamic var fileURL : String = ""
   
   override static func primaryKey() -> String? {
     return "date"

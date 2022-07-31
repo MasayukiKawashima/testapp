@@ -108,6 +108,11 @@ extension PageViewController: UIPageViewControllerDelegate {
     let count = results.count
     if count != 0 {
       nextVC.textField.text = results[0].textFieldString
+      if results[0].fileURL != "" {
+        let fileURL = URL(string: results[0].fileURL)
+        let filePath = fileURL?.path
+        nextVC.photoImageView.image = UIImage(contentsOfFile: filePath!)
+      }
     }
     
 //    let currentVC = self.viewControllers![0] as! ViewController
