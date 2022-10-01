@@ -109,9 +109,25 @@ extension PageViewController: UIPageViewControllerDelegate {
     if count != 0 {
       nextVC.textField.text = results[0].textFieldString
       if results[0].fileURL != "" {
-        let fileURL = URL(string: results[0].fileURL)
-        let filePath = fileURL?.path
-        nextVC.photoImageView.image = UIImage(contentsOfFile: filePath!)
+        
+        let documentDirectoryFileURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        
+        let documentPath = documentDirectoryFileURL.appendingPathComponent(results[0].fileURL)
+        
+        //let fileURL = URL(string: results[0].fileURL)
+        let filePath = documentPath.path
+        
+        let photoImage = UIImage(contentsOfFile: filePath)!
+        //nextVC.photoImageView.image = UIImage(contentsOfFile: filePath!)
+        
+        guard let orientedCIImage = CIImage(image: photoImage)?.oriented(CGImagePropertyOrientation.right),
+              let cgImage = CIContext(options: nil).createCGImage(orientedCIImage, from: orientedCIImage.extent)
+        else {
+          print("画像の向きの修正に失敗しました")
+          return
+        }
+        let orientedUIImage = UIImage(cgImage: cgImage)
+        nextVC.photoImageView.image = orientedUIImage
       }
     }
     

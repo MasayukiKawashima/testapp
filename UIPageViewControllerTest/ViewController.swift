@@ -18,6 +18,7 @@ class ViewController: UIViewController{
   
   var documentDirectoryFileURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
   
+  var fileName = String()
   
   var index: Int = 0
   
@@ -39,9 +40,24 @@ class ViewController: UIViewController{
     if count != 0 {
       self.textField.text = results[0].textFieldString
       if results[0].fileURL != "" {
-        let fileURL = URL(string: results[0].fileURL)
-        let filePath = fileURL?.path
-        self.photoImageView.image = UIImage(contentsOfFile: filePath!)
+        
+        let documentPath = documentDirectoryFileURL.appendingPathComponent(results[0].fileURL)
+        
+        let filePath = documentPath.path
+        
+        let photoImage = UIImage(contentsOfFile: filePath)!
+        
+        guard let orientedCIImage = CIImage(image: photoImage)?.oriented(CGImagePropertyOrientation.right),
+              let cgImage = CIContext(options: nil).createCGImage(orientedCIImage, from: orientedCIImage.extent)
+        else {
+          print("画像の向きの修正に失敗しました")
+          return
+        }
+        let orientedUIImage = UIImage(cgImage: cgImage)
+        self.photoImageView.image = orientedUIImage
+        
+        
+        //self.photoImageView.image = UIImage(contentsOfFile: filePath!)
       }
     }
     // Do any additional setup after loading the view.
@@ -174,19 +190,20 @@ extension ViewController: UINavigationControllerDelegate, UIImagePickerControlle
       self.photoImageView.contentMode = .scaleAspectFit
       self.photoImageView.image = pickedImage
       
-      //画像をドキュメントに保存
-      saveImageToDocument(pickedImage: pickedImage)
+      //画像の方向の確認用のテストコード
+      print(pickedImage.imageOrientation.rawValue)
       
       //データベースの確認
       let results = CheckDateDataModel().checkDateData(viewController: self)
       let count = results.count
       
+      saveImageToDocument(pickedImage: pickedImage)
       //データがなかったらその日のデータを作成
       if count == 0 {
         let realm = try! Realm()
         let dateData = DateDataModel()
         dateData.date = self.date
-        dateData.fileURL = documentDirectoryFileURL.absoluteString
+        dateData.fileURL = fileName
         try! realm.write {
           realm.add(dateData)
         }
@@ -207,7 +224,7 @@ extension ViewController: UINavigationControllerDelegate, UIImagePickerControlle
         }
         //その後あたらしいデータをいれる
         try! realm.write() {
-          results[0].fileURL = documentDirectoryFileURL.absoluteString
+          results[0].fileURL = self.fileName
       }
     }
     
@@ -218,14 +235,19 @@ extension ViewController: UINavigationControllerDelegate, UIImagePickerControlle
     
     let fileName = "\(NSUUID().uuidString)"
     
+    //後にファイル名だけをrealmに保存する
+    self.fileName = fileName
+    
     if documentDirectoryFileURL != nil {
+      //relamにはファイル名だけを保存するが、ドキュメントへの保存はフォルダURLにファイル名を加えて保存する必要がある
+      //なお、アプリの再起動時等relamから呼び出す時にはその時点でのアプリIDを使う
       let path = documentDirectoryFileURL.appendingPathComponent(fileName)
       documentDirectoryFileURL = path
     }
   }
   //ドキュメントへ写真を保存するメソッド
   //ひとまずPNGとして保存する。ファイル形式については要確認。
-  func saveImageToDocument (pickedImage: UIImage) {
+  func saveImageToDocument(pickedImage: UIImage) {
     
     createImageFilePath()
     

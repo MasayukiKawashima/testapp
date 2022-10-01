@@ -24,7 +24,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
   
   func migration() {
     
-    let nextSchemaVersion: UInt64 = 1
+    let nextSchemaVersion: UInt64 = 2
     
     let config = Realm.Configuration(
       schemaVersion: nextSchemaVersion,
