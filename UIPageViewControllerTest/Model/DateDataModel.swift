@@ -12,6 +12,8 @@ class DateDataModel: Object {
   @objc dynamic var date: String = ""
   @objc dynamic var textFieldString: String = ""
   @objc dynamic var fileURL : String = ""
+  //写真の向き
+  @objc dynamic var orientaion: String = ""
   
   override static func primaryKey() -> String? {
     return "date"
